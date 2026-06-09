@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Guard Schedule — GGSS Nursajaya | Firebase Sync</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f172a; font-family: system-ui, -apple-system, sans-serif; }
+    input, button, textarea, select { font-family: inherit; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    @media (min-width: 768px) {
+      body { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 0; }
+      #root { width: 480px; min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+    }
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    // Firebase Config
+    window.FBCONFIG = {
+      apiKey:            "AIzaSyDm8Gi60D3QD7SRo4P4ZmDSnBEinzPqlpY",
+      authDomain:        "nursajaya-guard.firebaseapp.com",
+      databaseURL:       "https://nursajaya-guard-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:         "nursajaya-guard",
+      storageBucket:     "nursajaya-guard.firebasestorage.app",
+      messagingSenderId: "959882902767",
+      appId:             "1:959882902767:web:b70a2cc18fef0fc1b92f1a"
+    };
+    window.FB_READY = false;
+    window.DBREF = null;
+    // Init Firebase after page fully loaded
+    window.addEventListener("load", function() {
+      try {
+        if (typeof firebase !== "undefined") {
+          firebase.initializeApp(window.FBCONFIG);
+          window.DBREF = firebase.database().ref("nursajaya_guard/data");
+          window.FB_READY = true;
+          console.log("✅ Firebase connected!");
+        } else {
+          console.warn("⚠️ Firebase SDK not loaded - using localStorage");
+        }
+      } catch(e) {
+        console.warn("⚠️ Firebase init error:", e.message);
+      }
+    });
+  </script>
+
+  <script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+const STATUSES = [
+  {k:"",      lb:"On Duty",  dot:"#4ade80", bg:"rgba(74,222,128,0.15)"},
+  {k:"cuti",  lb:"Cuti",     dot:"#fbbf24", bg:"rgba(251,191,36,0.15)"},
+  {k:"mc",    lb:"MC",       dot:"#fb923c", bg:"rgba(251,146,60,0.15)"},
+  {k:"train", lb:"Training", dot:"#60a5fa", bg:"rgba(96,165,250,0.15)"},
+  {k:"off",   lb:"Off",      dot:"#f87171", bg:"rgba(248,113,113,0.15)"},
+];
+const getSt = k => STATUSES.find(s=>s.k===k)||STATUSES[0];
+
+const ROSTER = ["AMAR BAHADUR","AMBAR BAHADUR SHAHI","ANIL KHATRI","ASHOK BUDHA","ASHOK KUMAR TAMANG","ASLAM MOCHI","BAL BAHADUR THAPA","BAL KUMAR KARKI","BALARAM TAMANG","BAHADUR SINGH OLI","BASANT PASWAN","BEL BAHADUR SUNAR","BHARAT B. OLI","BHIM B. BOHARA","BHUBAN B K","BHUPAL MAJHI","BIKRAM THAPA MAGAR","BINDE KENDU","BINOD KUMAR CHAMAR","BIR BAHADUR KHATRI","BIRKHA B. ROKAYA","BISHNU LAL SHRESTHA","BISHU TAMANG","BRIJ KISHOR RAY","CHANDRA BAHADUR","CHHUNILAL CHAUDHARY","DATTA BAHADUR BISTA","DEU KUMAR TUMROK","DEV BAHADUR CHAUDHARY","DHAN B. GAHATRAJ","DHAN BAHADUR","DINESH NEUPANE","DINESH YADAV","DIP NARAYAN JHA","DIPAK GHALE","GANESH B. BASNET","GANESH BAHADUR BK","GANESH BHATTA RAI","GOBINDA RAI","HARI KC","HARI PRASAD GAUTAM","HARK BHUL","HEMANT OLI","HIKMAT BAHADUR","HOM B. LAMICHHANE","INDRA BAHADUR BK","ITABARI KANDU","JAGAT PUN MAGAR","JAGDISH PRASAD KOHAL","JANAK BAHADUR HAMAL","JIMBA RANA","KAIYUM RAI","KAMAL OLI CHHETRI","KAMAN SING","KESHAB BAHADUR BC","KHADKA B. BUDHA(2)","KHUM B. CHAUDHARY","KISHOR SUNUWAR","KRISHNA B. BARAM","KRISHNA B. BHUDHATHOKI","KUSHAL MAGRATI","LAL BAHADUR","LEKHA B. SHRESTHA","LEKHANATH","LOK RAJ BHAT","MAHESH GIRI","MAHESH SHAHI","MADAN B. KUNWAR","MAN BAHADUR RASKOTI","MANBIR CHANTEL","MANI RAM RAY YADAV","MANI RAJ SARU","MIN BAHADUR CHAUDHARY","MIRGENDRA PRASAD OJHA","NABIN SHAHI","NARESH RATOKI","NETRA B. BUDHA","NIRAK KHATRI","NMA SANG TAMANG","PAHAL SINGH THAPA MAGAR","PAWAN KUMAR SINGH","PEMA SINGATAN","PREM KUMAR RAI","PREM KUMAR TUMROK","RAM CHANDER CHAUDHARY","RAM RAJBANSHI","RAM SAMARE","RAJENDRA B. SINGH","RAJENDRA B. TAMARAKAR","RAJESH SUNDAR","RAJKUMAR NEGI","RAJU ACHARYA","RAJU SUBBA LIMBU","RANJIT BHANDARI","RAMESH KUMAR KUNWAR","SAHADEV TIMALSINA","SAGAR RANPAL","SAMASER GHARTI","SALMAN NAU","SANJIT KUMAR CHAUDHARY","SHAMBHU KANGBA","SHIBA PRASAD CHAUDHARY","SHIV PRASAD YADAV","SHIVA PRASAD RIMAL","SUMAN GHALAN","SUMAN KUMAL","SURENDRA BAHADUR","TAMRAKAR","TARA BAHADUR","TARA SINGH OLI","TEK BAHADUR KARKI","TIL BAHADUR SARKI","TILAK BAHADUR","UMESH KUMAR SAH","VISHNU RAM CHAUDHARY","YAM BAHADUR","YESHU THAPA MAGAR","YURAL CHAUDHARY","DEBENDRA MISHRA"];
+
+const INIT_SITES = [
+  {id:"el",name:"East Ledang",
+   day:["DINESH NEUPANE","BALARAM TAMANG","YURAL CHAUDHARY","CHANDRA BAHADUR","SUMAN KUMAL","CHHUNILAL CHAUDHARY","NETRA B. BUDHA","SHIVA PRASAD RIMAL","SAGAR RANPAL","RAM CHANDER CHAUDHARY","BRIJ KISHOR RAY","GANESH B. BASNET"],
+   night:["TAMRAKAR","NARESH RATOKI","JAGDISH PRASAD KOHAL","NIRAK KHATRI","RAM RAJBANSHI","MIRGENDRA PRASAD OJHA","KHADKA B. BUDHA(2)","BHARAT B. OLI","BAL KUMAR KARKI","BHIM B. BOHARA","",""],
+   extra:[{id:"gcd",name:"Gate C (Day)",g:["PAWAN KUMAR SINGH",""]},{id:"gcn",name:"Gate C (Night)",g:["VISHNU RAM CHAUDHARY"]}]},
+  {id:"imp",name:"Impiana",day:["MANBIR CHANTEL","BINDE KENDU","NMA SANG TAMANG","LOK RAJ BHAT","KESHAB BAHADUR BC","KHUM B. CHAUDHARY"],night:["AMAR BAHADUR","SHIBA PRASAD CHAUDHARY","GANESH BHATTA RAI","SANJIT KUMAR CHAUDHARY","BEL BAHADUR SUNAR"]},
+  {id:"skt",name:"Sky Trees",day:["BISHU TAMANG","DIPAK GHALE","ASLAM MOCHI","BIRKHA B. ROKAYA","DIP NARAYAN JHA"],night:["DINESH YADAV","UMESH KUMAR SAH","HIKMAT BAHADUR","RAJENDRA B. SINGH","PREM KUMAR RAI"]},
+  {id:"lh",name:"Ledang Heights",day:["GOBINDA RAI","MAHESH GIRI","TARA BAHADUR","SHIV PRASAD YADAV","BINOD KUMAR CHAMAR","RANJIT BHANDARI","MANI RAM RAY YADAV"],night:["TEK BAHADUR KARKI","RAJKUMAR NEGI","MIN BAHADUR CHAUDHARY","ASHOK KUMAR TAMANG","RAJU SUBBA LIMBU","AMBAR BAHADUR SHAHI","JANAK BAHADUR HAMAL"]},
+  {id:"som",name:"Sommerset",day:["SAHADEV TIMALSINA","KAMAL OLI CHHETRI","GANESH BAHADUR BK","DEV BAHADUR CHAUDHARY"],night:["TILAK BAHADUR","LEKHANATH","KISHOR SUNUWAR","KUSHAL MAGRATI"]},
+  {id:"gm",name:"Grand Medini",day:["DHAN BAHADUR","MADAN B. KUNWAR","BIKRAM THAPA MAGAR","SALMAN NAU"],night:["SUMAN GHALAN","MAN BAHADUR RASKOTI","KAIYUM RAI"]},
+  {id:"est",name:"Estuari",day:["PEMA SINGATAN","BAHADUR SINGH OLI","RAM SAMARE","LAL BAHADUR","RAMESH KUMAR KUNWAR"],night:["MANI RAJ SARU","HOM B. LAMICHHANE","KRISHNA B. BHUDHATHOKI","SAMASER GHARTI","BAL BAHADUR THAPA"]},
+  {id:"res",name:"Residensi",day:["HARI KC","ASHOK BUDHA","PAHAL SINGH THAPA MAGAR"],night:["HARK BHUL","BISHNU LAL SHRESTHA"]},
+  {id:"sh",name:"Senadi Hills",day:["PREM KUMAR TUMROK","INDRA BAHADUR BK","JIMBA RANA"],night:["JAGAT PUN MAGAR","YAM BAHADUR","RAJENDRA B. TAMARAKAR"]},
+  {id:"ps",name:"Paragon School",day:["DEBENDRA MISHRA","DHAN B. GAHATRAJ","BHUBAN B K","BIR BAHADUR KHATRI","ANIL KHATRI","KRISHNA B. BARAM","TIL BAHADUR SARKI","DATTA BAHADUR BISTA"],night:["NABIN SHAHI","RAJU ACHARYA",""]},
+  {id:"spp",name:"SPP2",day:["BASANT PASWAN","RAJESH SUNDAR","KAMAN SING","BHUPAL MAJHI"],night:["SURENDRA BAHADUR","TARA SINGH OLI","SHAMBHU KANGBA","ITABARI KANDU"]},
+  {id:"rh",name:"Ruby Hills",day:["HARI PRASAD GAUTAM","MAHESH SHAHI","LEKHA B. SHRESTHA"],night:["DEU KUMAR TUMROK","YESHU THAPA MAGAR","HEMANT OLI"]},
+];
+
+const INIT_HOSTELS = [
+  {id:"h1",name:"Hostel 1",addr:"No 27-01, Jln SILC1/13",guards:["YAM BAHADUR","PEMA SINGATAN","SAMASER GHARTI","LAL BAHADUR","HARK BHUL","SAHADEV TIMALSINA","TAMRAKAR","HARI KC","AMBAR BAHADUR SHAHI","GANESH BAHADUR BK","PREM KUMAR RAI","TEK BAHADUR KARKI","MANI RAM RAY YADAV","GOBINDA RAI","BISHNU LAL SHRESTHA","RAM SAMARE","RAJENDRA B. TAMARAKAR","BISHU TAMANG","SAGAR RANPAL","NIRAK KHATRI","UMESH KUMAR SAH","NETRA B. BUDHA","SUMAN KUMAL","DIPAK GHALE"]},
+  {id:"h2",name:"Hostel 2",addr:"No 27-02, Jln SILC1/13",guards:["KUSHAL MAGRATI","PREM KUMAR TUMROK","JAGAT PUN MAGAR","RAJU SUBBA LIMBU","BIRKHA B. ROKAYA","ASLAM MOCHI","BAHADUR SINGH OLI","","RAMESH KUMAR KUNWAR","LEKHANATH","MIN BAHADUR CHAUDHARY","DEV BAHADUR CHAUDHARY","INDRA BAHADUR BK","TILAK BAHADUR","DIP NARAYAN JHA","RAJKUMAR NEGI","GANESH B. BASNET","BALARAM TAMANG","SHIVA PRASAD RIMAL","HOM B. LAMICHHANE","NARESH RATOKI","CHHUNILAL CHAUDHARY","RAM RAJBANSHI","PAWAN KUMAR SINGH"]},
+  {id:"h3",name:"Hostel 3",addr:"No 13-02, Jln SILC1/13",guards:["TARA BAHADUR","RAM CHANDER CHAUDHARY","RAJENDRA B. SINGH","VISHNU RAM CHAUDHARY","MIRGENDRA PRASAD OJHA","RANJIT BHANDARI","KRISHNA B. BHUDHATHOKI","BHARAT B. OLI","BAL KUMAR KARKI","HIKMAT BAHADUR","BRIJ KISHOR RAY","JANAK BAHADUR HAMAL","","DINESH YADAV","","DINESH NEUPANE","ASHOK KUMAR TAMANG","KISHOR SUNUWAR","JIMBA RANA","JAGDISH PRASAD KOHAL","BHIM B. BOHARA","BINOD KUMAR CHAMAR","PAHAL SINGH THAPA MAGAR","BAL BAHADUR THAPA","KAMAL OLI CHHETRI","KHADKA B. BUDHA(2)","CHANDRA BAHADUR","ASHOK BUDHA","SHIV PRASAD YADAV","MANI RAJ SARU","YURAL CHAUDHARY","MAHESH GIRI"]},
+  {id:"h4",name:"Hostel 4",addr:"No 09-02, Jln Nusa Prima",guards:["MANBIR CHANTEL","BINDE KENDU","NMA SANG TAMANG","LOK RAJ BHAT","KESHAB BAHADUR BC","KHUM B. CHAUDHARY","AMAR BAHADUR","SHIBA PRASAD CHAUDHARY","GANESH BHATTA RAI","SANJIT KUMAR CHAUDHARY","BEL BAHADUR SUNAR","DHAN BAHADUR","MADAN B. KUNWAR","BIKRAM THAPA MAGAR","SUMAN GHALAN","MAN BAHADUR RASKOTI","KAIYUM RAI","SALMAN NAU"]},
+  {id:"h5",name:"Hostel SPP2",addr:"SPP2",guards:["BASANT PASWAN","RAJESH SUNDAR","KAMAN SING","BHUPAL MAJHI","SURENDRA BAHADUR","TARA SINGH OLI","SHAMBHU KANGBA","ITABARI KANDU","HARI PRASAD GAUTAM","MAHESH SHAHI","LEKHA B. SHRESTHA","DEU KUMAR TUMROK","YESHU THAPA MAGAR","HEMANT OLI"]},
+  {id:"h6",name:"Hostel School",addr:"Paragon School",guards:["DEBENDRA MISHRA","DHAN B. GAHATRAJ","BHUBAN B K","BIR BAHADUR KHATRI","ANIL KHATRI","KRISHNA B. BARAM","TIL BAHADUR SARKI","DATTA BAHADUR BISTA","NABIN SHAHI","RAJU ACHARYA"]},
+];
+
+const INIT_SUMMARY = {lainLain:0};
+const cs = {bg:"#0f172a",card:"#1e293b",border:"#334155",text:"#f1f5f9",muted:"#94a3b8",acc:"#3b82f6",green:"#22c55e",red:"#ef4444",header:"#172554"};
+const fl = {display:"flex",alignItems:"center"};
+const tb = (x={})=>({background:"none",border:"none",cursor:"pointer",color:cs.text,fontFamily:"system-ui,sans-serif",padding:0,...x});
+
+const gInfo = (gi,name) => (gi&&name&&gi[name])||{status:"",note:"",contractEnd:""};
+const addLog = (st,desc) => ({...st,log:[{ts:Date.now(),desc},...(st.log||[])].slice(0,50)});
+const findLoc = (st,name) => {
+  for (const s of st.sites) {
+    const di=s.day.indexOf(name); if(di>=0) return {siteId:s.id,shift:"day",idx:di,label:`${s.name} Day #${di+1}`};
+    const ni=s.night.indexOf(name); if(ni>=0) return {siteId:s.id,shift:"night",idx:ni,label:`${s.name} Night #${ni+1}`};
+    if(s.extra) for(const ex of s.extra){const ei=ex.g.indexOf(name);if(ei>=0) return {siteId:s.id,isExtra:true,extraId:ex.id,idx:ei,label:`${s.name} ${ex.name} #${ei+1}`};}
+  }
+  return null;
+};
+
+function App() {
+  const [tab,setTab]       = useState("dash");
+  const [st,setSt]         = useState(null);
+  const [load,setLoad]     = useState(true);
+  const [siteId,setSiteId] = useState(null);
+  const [modal,setModal]   = useState(null);
+  const [lbl,setLbl]       = useState("");
+  const [srch,setSrch]     = useState(false);
+  const [isAdmin,setIsAdmin] = useState(false);
+  const [showLogin,setShowLogin] = useState(false);
+  const [loginMode,setLoginMode] = useState("login"); // "login"|"setup"|"change"
+  const [pendingModal,setPendingModal] = useState(null);
+
+  const pinExists = () => !!localStorage.getItem("gss_pin");
+
+  const openEdit = (m) => {
+    if(isAdmin){setModal(m);return;}
+    setPendingModal(m);
+    setLoginMode(pinExists()?"login":"setup");
+    setShowLogin(true);
+  };
+  const adminSave = (ns) => { if(isAdmin||!pinExists()) save(ns); };
+  const onAdminLogin = () => {
+    setIsAdmin(true); setShowLogin(false);
+    if(pendingModal){setModal(pendingModal);setPendingModal(null);}
+  };
+  const doLogout = () => { setIsAdmin(false); };
+  const doChangePIN = () => { setLoginMode("change"); setShowLogin(true); };
+
+  useEffect(()=>{
+    const INIT = {sites:INIT_SITES,hostels:INIT_HOSTELS,summary:INIT_SUMMARY,guardInfo:{},log:[],notices:[],schedule:{}};
+
+    const startApp = () => {
+      if (window.FB_READY && window.DBREF) {
+        window.DBREF.on("value", snap => {
+          const val = snap.val();
+          if (val) { setSt(val); }
+          else { window.DBREF.set(INIT); setSt(INIT); }
+          setLoad(false);
+        });
+      } else {
+        try {
+          const s=localStorage.getItem("gss_v10");
+          setSt(s?JSON.parse(s):INIT);
+        } catch { setSt(INIT); }
+        setLoad(false);
+      }
+    };
+
+    // Wait for Firebase to initialize (triggered by window load event)
+    if (document.readyState === "complete") {
+      setTimeout(startApp, 300);
+    } else {
+      window.addEventListener("load", () => setTimeout(startApp, 300));
+    }
+
+    return () => { if(window.DBREF) window.DBREF.off("value"); };
+  },[]);
+
+  const save = ns => {
+    setSt(ns); setLbl("⏳");
+    if (!window.FB_READY) {
+      try {
+        localStorage.setItem("gss_v10",JSON.stringify(ns));
+        setLbl("✓"); setTimeout(()=>setLbl(""),1500);
+      } catch { setLbl("⚠"); }
+      return;
+    }
+    window.DBREF.set(ns)
+      .then(()=>{ setLbl("✓ Sync"); setTimeout(()=>setLbl(""),2000); })
+      .catch(()=>{ setLbl("⚠ Gagal"); });
+  };
+
+  if(!window.FB_READY && !load) {
+    return (
+      <div style={{height:"100vh",overflowY:"auto",background:cs.bg,color:cs.text,fontFamily:"system-ui",padding:20}}>
+        <div style={{maxWidth:440,margin:"0 auto",paddingTop:30}}>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:48}}>🔥</div>
+            <div style={{fontWeight:700,fontSize:20,marginTop:8}}>Setup Firebase</div>
+            <div style={{fontSize:13,color:cs.muted,marginTop:4}}>Ikuti langkah berikut untuk aktifkan sync data</div>
+          </div>
+          {[
+            {n:"1",t:"Buat Projek Firebase",d:"Pergi ke console.firebase.google.com → Klik 'Add project' → Nama: nursajaya-guard → Disable Analytics → Create",ic:"🌐",link:"https://console.firebase.google.com"},
+            {n:"2",t:"Aktifkan Realtime Database",d:"Dalam projek → Build → Realtime Database → Create Database → Pilih lokasi Asia (singapore) → Start in test mode",ic:"🗄️"},
+            {n:"3",t:"Dapatkan Config",d:"Project Settings (gear icon) → Your apps → Web app (</) → Register app → Salin firebaseConfig",ic:"⚙️"},
+            {n:"4",t:"Edit Fail HTML",d:"Buka fail guard-schedule.html dengan Notepad/TextEdit → Cari bahagian 'PASTE_API_KEY_HERE' → Ganti dengan config dari Firebase",ic:"✏️"},
+            {n:"5",t:"Set Database Rules",d:"Realtime Database → Rules → Paste: { "rules": { ".read": true, ".write": true } } → Publish",ic:"🔒"},
+          ].map(s=>(
+            <div key={s.n} style={{background:"#1e293b",borderRadius:10,padding:14,marginBottom:10,display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div style={{background:cs.acc,borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,flexShrink:0}}>{s.n}</div>
+              <div>
+                <div style={{fontWeight:600,fontSize:14,marginBottom:4}}>{s.ic} {s.t}</div>
+                <div style={{fontSize:12,color:cs.muted,lineHeight:1.5}}>{s.d}</div>
+                {s.link&&<a href={s.link} target="_blank" style={{fontSize:12,color:cs.acc,display:"block",marginTop:4}}>{s.link} →</a>}
+              </div>
+            </div>
+          ))}
+          <div style={{background:"#1a2744",border:`1px solid ${cs.acc}`,borderRadius:10,padding:14,marginTop:4}}>
+            <div style={{fontSize:12,fontWeight:700,color:cs.acc,marginBottom:6}}>💡 CONTOH BAHAGIAN YANG PERLU DIEDIT:</div>
+            <pre style={{fontSize:10,color:"#94a3b8",overflow:"auto",lineHeight:1.6}}>{`apiKey: "AIzaSyXXXXXXXX",
+authDomain: "nursajaya-guard.firebaseapp.com",
+databaseURL: "https://nursajaya-guard-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "nursajaya-guard",
+storageBucket: "nursajaya-guard.appspot.com",
+messagingSenderId: "123456789",
+appId: "1:123456789:web:abcdef"`}</pre>
+          </div>
+          <div style={{textAlign:"center",marginTop:16,fontSize:12,color:cs.muted}}>
+            Selepas edit dan save HTML, refresh page ini
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if(load) return <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:cs.bg,color:cs.text,fontFamily:"system-ui"}}>
+    <div style={{textAlign:"center"}}>
+      <div style={{fontSize:32,marginBottom:8}}>🔥</div>
+      <div>Menyambung ke Firebase...</div>
+    </div>
+  </div>;
+
+  const site=siteId?st.sites.find(s=>s.id===siteId):null;
+  const inDetail=tab==="sites"&&!!siteId;
+
+  const unread = (st.notices||[]).filter(n=>!n.readAt).length;
+
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",height:"100vh",display:"flex",flexDirection:"column",background:cs.bg,color:cs.text,fontFamily:"system-ui,-apple-system,sans-serif",position:"relative"}}>
+      <div style={{background:cs.header,padding:"10px 14px",...fl,justifyContent:"space-between",flexShrink:0}}>
+        <div style={{...fl,gap:8}}>
+          {inDetail&&<button style={tb({fontSize:24,color:cs.acc,lineHeight:1,paddingRight:4})} onClick={()=>setSiteId(null)}>←</button>}
+          <div>
+            <div style={{fontWeight:700,fontSize:15}}>{inDetail?site?.name:"Guard Schedule"}</div>
+            {!inDetail&&<div style={{fontSize:11,color:"#93c5fd"}}>GGSS Nursajaya · Senadi Hills</div>}
+          </div>
+        </div>
+        <div style={{...fl,gap:10}}>
+          <span style={{fontSize:11,color:"#93c5fd"}}>{lbl}</span>
+          <button style={tb({fontSize:18,color:cs.muted,padding:"4px"})} onClick={()=>setSrch(true)}>🔍</button>
+          <button style={tb({fontSize:13,padding:"4px 8px",borderRadius:6,background:isAdmin?"rgba(34,197,94,0.15)":"rgba(239,68,68,0.15)",color:isAdmin?cs.green:cs.red,border:`1px solid ${isAdmin?cs.green:cs.red}`})}
+            onClick={()=>isAdmin?doLogout():setShowLogin(true)||setLoginMode(pinExists()?"login":"setup")}>
+            {isAdmin?"🔓 Admin":"🔒 Login"}
+          </button>
+        </div>
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",paddingBottom:64}}>
+        {tab==="dash"   && <Dashboard   st={st} onSave={adminSave} isAdmin={isAdmin} onChangePIN={doChangePIN} onGo={id=>{setSiteId(id);setTab("sites");}} />}
+        {tab==="sites"  && !siteId && <SitesList  st={st} onSel={setSiteId} />}
+        {tab==="sites"  && siteId  && <SiteDetail site={site} st={st} onEdit={openEdit} onSave={adminSave} isAdmin={isAdmin} />}
+        {tab==="roster" && <RosterView  st={st} onEdit={name=>openEdit({type:"guardInfo",name})} />}
+        {tab==="hostel" && <HostelView  st={st} onSave={adminSave} onEdit={openEdit} isAdmin={isAdmin} />}
+        {tab==="notis"  && <NotisView   st={st} onSave={adminSave} isAdmin={isAdmin} />}
+      </div>
+
+      <div style={{position:"absolute",bottom:0,left:0,right:0,background:"#0b1526",borderTop:`1px solid ${cs.border}`,display:"grid",gridTemplateColumns:"repeat(5,1fr)"}}>
+        {[["dash","📊","Dash"],["sites","🏢","Sites"],["roster","👮","Roster"],["hostel","🏠","Hostel"],["notis","📢","Notis"]].map(([id,ic,lb])=>(
+          <button key={id} style={tb({display:"flex",flexDirection:"column",alignItems:"center",gap:1,padding:"7px 2px",color:tab===id?cs.acc:cs.muted,fontSize:9,fontFamily:"inherit",position:"relative"})}
+            onClick={()=>{setTab(id);if(id!=="sites")setSiteId(null);}}>
+            <span style={{fontSize:20}}>{ic}</span>
+            <span>{lb}</span>
+            {id==="notis"&&unread>0&&<span style={{position:"absolute",top:4,right:8,background:cs.red,color:"white",borderRadius:"50%",width:16,height:16,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{unread}</span>}
+          </button>
+        ))}
+      </div>
+
+      {modal&&<EditModal modal={modal} st={st} onClose={()=>setModal(null)} onSave={ns=>{save(ns);setModal(null);}} />}
+      {srch&&<SearchOverlay st={st} onClose={()=>setSrch(false)} onGo={id=>{setSiteId(id);setTab("sites");setSrch(false);}} />}
+      {showLogin&&<LoginModal mode={loginMode} onLogin={onAdminLogin} onClose={()=>{setShowLogin(false);setPendingModal(null);}} />}
+    </div>
+  );
+}
+
+function Dashboard({st,onSave,onGo,isAdmin,onChangePIN}) {
+  const luarIds=["ps","spp","rh"];
+  const tot=s=>s.day.length+s.night.length+(s.extra?s.extra.reduce((b,e)=>b+e.g.length,0):0);
+  const emp=s=>s.day.filter(g=>!g).length+s.night.filter(g=>!g).length+(s.extra?s.extra.reduce((b,e)=>b+e.g.filter(g=>!g).length,0):0);
+  const nurs=st.sites.filter(s=>!luarIds.includes(s.id)).reduce((a,s)=>a+tot(s),0);
+  const luar=st.sites.filter(s=>luarIds.includes(s.id)).reduce((a,s)=>a+tot(s),0);
+  const diSite=nurs+luar;
+  const kosong=st.sites.reduce((a,s)=>a+emp(s),0);
+  const onDuty=diSite-kosong;
+
+  const [editL,setEditL]=useState(false);
+  const [showLaporan,setShowLaporan]=useState(false);
+  const [lainVal,setLainVal]=useState(st.summary.lainLain||0);
+  const [showLog,setShowLog]=useState(false);
+
+  const today=new Date();
+  const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const todayEx=[];
+  Object.entries(st.schedule||{}).forEach(([siteId,guards])=>{
+    const siteName=st.sites.find(s=>s.id===siteId)?.name||siteId;
+    Object.entries(guards).forEach(([guard,days])=>{
+      if(days[todayStr]) todayEx.push({guard,site:siteName,...days[todayStr]});
+    });
+  });
+  const gi=st.guardInfo||{};
+  const alerts=Object.entries(gi).filter(([,i])=>i.contractEnd).map(([name,i])=>{
+    const diff=Math.ceil((new Date(i.contractEnd)-today)/(86400000));
+    return {name,diff,date:i.contractEnd};
+  }).filter(a=>a.diff>=0&&a.diff<=30).sort((a,b)=>a.diff-b.diff);
+
+  const doExport=()=>{
+    const txt=JSON.stringify(st,null,2);
+    const blob=new Blob([txt],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download="guard_schedule_backup_"+new Date().toISOString().split("T")[0]+".json";
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div style={{padding:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+        {[[diSite,"Di Site",cs.acc],[onDuty,"On Duty",cs.green],[kosong,"Slot Kosong",kosong>0?cs.red:cs.muted]].map(([v,lb,col])=>(
+          <div key={lb} style={{background:cs.card,borderRadius:10,padding:"12px 6px",textAlign:"center"}}>
+            <div style={{fontSize:26,fontWeight:700,color:col}}>{v}</div>
+            <div style={{fontSize:11,color:cs.muted,marginTop:2}}>{lb}</div>
+          </div>
+        ))}
+      </div>
+
+      <HariIni todayEx={todayEx} todayStr={todayStr} />
+
+      <div style={{background:cs.card,borderRadius:10,padding:12,marginBottom:14}}>
+        <div style={{fontSize:12,fontWeight:700,color:cs.muted,letterSpacing:1,marginBottom:10}}>STATISTIK</div>
+        {[["Guard Nursajaya",nurs],["Luar Nursajaya",luar],["Di Site",diSite],["Slot Kosong",kosong],["On Duty",onDuty]].map(([lb,v])=>(
+          <div key={lb} style={{...fl,justifyContent:"space-between",marginBottom:5}}>
+            <span style={{fontSize:13}}>{lb}</span>
+            <div style={{...fl,gap:5}}>
+              <span style={{fontSize:9,color:cs.muted,background:"#1e3a5f",padding:"1px 5px",borderRadius:3}}>auto</span>
+              <span style={{fontWeight:700,color:cs.acc,fontSize:14,minWidth:28,textAlign:"right"}}>{v}</span>
+            </div>
+          </div>
+        ))}
+        <div style={{borderTop:`1px solid ${cs.border}`,margin:"8px 0"}}></div>
+        <div style={{...fl,justifyContent:"space-between"}}>
+          <span style={{fontSize:13}}>Lain-lain</span>
+          {editL?(
+            <div style={{...fl,gap:6}}>
+              <input type="number" value={lainVal} onChange={e=>setLainVal(+e.target.value)}
+                style={{width:52,background:"#0f172a",border:`1px solid ${cs.border}`,color:cs.text,padding:"3px 7px",borderRadius:5,fontSize:13,textAlign:"right"}}/>
+              <button style={tb({background:cs.acc,borderRadius:6,padding:"4px 10px",fontSize:12,color:"white"})}
+                onClick={()=>{onSave({...st,summary:{...st.summary,lainLain:lainVal}});setEditL(false);}}>✓</button>
+              <button style={tb({background:"#374151",borderRadius:6,padding:"4px 10px",fontSize:12,color:cs.muted})}
+                onClick={()=>setEditL(false)}>✕</button>
+            </div>
+          ):(
+            <div style={{...fl,gap:6}}>
+              <span style={{fontSize:9,color:cs.muted,background:"#2d3748",padding:"1px 5px",borderRadius:3}}>manual</span>
+              <span style={{fontWeight:700,color:"#fbbf24",fontSize:14,minWidth:28,textAlign:"right"}}>{st.summary.lainLain||0}</span>
+              <button style={tb({fontSize:13,color:isAdmin?cs.acc:cs.muted})} onClick={()=>{if(!isAdmin) return; setLainVal(st.summary.lainLain||0);setEditL(true);}}>{ isAdmin?"✏️":"🔒"}</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {alerts.length>0&&(
+        <div style={{background:"#1c1205",border:`1px solid #f97316`,borderRadius:10,padding:12,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#fb923c",marginBottom:8}}>⚠️ KONTRAK HAMPIR TAMAT</div>
+          {alerts.map(a=>(
+            <div key={a.name} style={{...fl,justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontSize:13}}>{a.name}</span>
+              <span style={{fontSize:12,fontWeight:600,color:a.diff<=7?cs.red:"#fbbf24"}}>{a.diff===0?"Hari ini!":`${a.diff} hari lagi`}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+        <button style={tb({background:cs.card,borderRadius:8,padding:"10px",...fl,justifyContent:"center",gap:4,fontSize:12})}
+          onClick={()=>setShowLog(v=>!v)}>
+          📋 Log {showLog?"▲":"▼"}
+        </button>
+        <button style={tb({background:cs.card,borderRadius:8,padding:"10px",...fl,justifyContent:"center",gap:4,fontSize:12})}
+          onClick={doExport}>
+          💾 Backup
+        </button>
+        <button style={tb({background:cs.card,borderRadius:8,padding:"10px",...fl,justifyContent:"center",gap:4,fontSize:12,color:cs.acc})}
+          onClick={()=>setShowLaporan(true)}>
+          📊 Laporan
+        </button>
+      </div>
+      {isAdmin&&<button style={tb({width:"100%",background:"rgba(239,68,68,0.08)",border:`1px dashed ${cs.red}`,borderRadius:8,padding:"8px",fontSize:12,color:cs.red,marginBottom:14,textAlign:"center"})}
+        onClick={onChangePIN}>🔑 Tukar PIN Admin</button>}
+      </div>
+
+      {showLog&&(
+        <div style={{background:cs.card,borderRadius:10,padding:12,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:cs.muted,marginBottom:8}}>LOG PERUBAHAN</div>
+          {!(st.log||[]).length&&<div style={{fontSize:13,color:cs.muted}}>Tiada perubahan lagi</div>}
+          {(st.log||[]).slice(0,15).map((e,i)=>(
+            <div key={i} style={{marginBottom:8,paddingBottom:8,borderBottom:i<14?`1px solid ${cs.border}`:"none"}}>
+              <div style={{fontSize:12,color:cs.text}}>{e.desc}</div>
+              <div style={{fontSize:10,color:cs.muted,marginTop:2}}>{new Date(e.ts).toLocaleString("ms-MY")}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{fontSize:12,fontWeight:700,color:cs.muted,letterSpacing:1,marginBottom:8}}>SEMUA SITE</div>
+      {st.sites.map(s=>{
+        const dc=s.day.filter(Boolean).length,nc=s.night.filter(Boolean).length;
+        const em=s.day.filter(g=>!g).length+s.night.filter(g=>!g).length+(s.extra?s.extra.reduce((b,e)=>b+e.g.filter(g=>!g).length,0):0);
+        return (
+          <button key={s.id} style={tb({width:"100%",background:cs.card,borderRadius:9,padding:"10px 12px",marginBottom:7,...fl,justifyContent:"space-between",textAlign:"left"})}
+            onClick={()=>onGo(s.id)}>
+            <div>
+              <div style={{fontWeight:600,fontSize:14}}>{s.name}</div>
+              <div style={{fontSize:11,color:cs.muted,marginTop:2}}>☀️ {dc} · 🌙 {nc}</div>
+            </div>
+            <div style={{...fl,gap:6}}>
+              {em>0&&<span style={{background:cs.red,color:"white",borderRadius:10,padding:"2px 7px",fontSize:11,fontWeight:600}}>{em}</span>}
+              <span style={{color:cs.muted,fontSize:18}}>›</span>
+            </div>
+          </button>
+        );
+      })}
+      {showLaporan&&<LaporanModal st={st} onClose={()=>setShowLaporan(false)} />}
+    </div>
+  );
+}
+
+function HariIni({todayEx,todayStr}) {
+  if(!todayEx.length) return null;
+  const TMAP={"off":{lb:"Off/Cuti",col:"#f87171",bg:"rgba(248,113,113,0.12)"},"ot":{lb:"Overtime",col:"#fbbf24",bg:"rgba(251,191,36,0.12)"},"mc":{lb:"MC",col:"#fb923c",bg:"rgba(251,146,60,0.12)"},"train":{lb:"Training",col:"#60a5fa",bg:"rgba(96,165,250,0.12)"},"ts":{lb:"Tukar Site",col:"#a78bfa",bg:"rgba(167,139,250,0.12)"}};
+  const grouped={};
+  todayEx.forEach(e=>{if(!grouped[e.type]) grouped[e.type]=[];grouped[e.type].push(e);});
+  const parts=todayStr.split('-');
+  return (
+    <div style={{background:"#0d1f38",border:`1px solid #1e3a5f`,borderRadius:10,padding:12,marginBottom:14}}>
+      <div style={{fontSize:12,fontWeight:700,color:"#93c5fd",marginBottom:8}}>📅 HARI INI — {parts[2]}/{parts[1]}/{parts[0]}</div>
+      {Object.entries(grouped).map(([type,items])=>{
+        const t=TMAP[type]||{lb:type,col:cs.muted,bg:"#1e293b"};
+        return (
+          <div key={type} style={{marginBottom:8}}>
+            <div style={{fontSize:10,fontWeight:700,color:t.col,marginBottom:4}}>{t.lb} ({items.length})</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {items.map((e,i)=>(
+                <span key={i} style={{fontSize:10,background:t.bg,color:t.col,padding:"2px 8px",borderRadius:8}}>
+                  {e.guard}{e.note?` → ${e.note}`:""}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SitesList({st,onSel}) {
+  return (
+    <div style={{padding:14}}>
+      {st.sites.map(s=>{
+        const dc=s.day.filter(Boolean).length,nc=s.night.filter(Boolean).length;
+        const em=s.day.filter(g=>!g).length+s.night.filter(g=>!g).length+(s.extra?s.extra.reduce((b,e)=>b+e.g.filter(g=>!g).length,0):0);
+        return (
+          <button key={s.id} style={tb({width:"100%",background:cs.card,border:`1px solid ${cs.border}`,borderRadius:10,padding:"12px 14px",marginBottom:9,...fl,justifyContent:"space-between",textAlign:"left"})}
+            onClick={()=>onSel(s.id)}>
+            <div>
+              <div style={{fontWeight:700,fontSize:15}}>{s.name}</div>
+              <div style={{fontSize:12,color:cs.muted,marginTop:3}}>☀️ Day: {dc} · 🌙 Night: {nc}</div>
+            </div>
+            <div style={{...fl,gap:6}}>
+              {em>0&&<span style={{background:cs.red,color:"white",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:600}}>{em} kosong</span>}
+              <span style={{color:cs.muted,fontSize:20}}>›</span>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SiteDetail({site,st,onEdit,onSave,isAdmin}) {
+  if(!site) return null;
+  const [view,setView]=useState("list");
+  const gi=st.guardInfo||{};
+
+  const doShare=()=>{
+    const d=new Date().toLocaleDateString("ms-MY");
+    const lines=[`🏢 *${site.name.toUpperCase()}* — ${d}\n`];
+    lines.push(`☀️ DAY SHIFT (${site.day.filter(Boolean).length} guard)`);
+    site.day.forEach((g,i)=>lines.push(`${i+1}. ${g||"— Kosong —"}`));
+    lines.push(`\n🌙 NIGHT SHIFT (${site.night.filter(Boolean).length} guard)`);
+    site.night.forEach((g,i)=>lines.push(`${i+1}. ${g||"— Kosong —"}`));
+    if(site.extra) site.extra.forEach(ex=>{
+      lines.push(`\n📍 ${ex.name.toUpperCase()}`);
+      ex.g.forEach((g,i)=>lines.push(`${i+1}. ${g||"— Kosong —"}`));
+    });
+    const txt=lines.join("\n");
+    if(navigator.share){navigator.share({title:site.name,text:txt}).catch(()=>{});}
+    else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>alert("Disalin ke clipboard!"));}
+  };
+
+  function GRow({g,i,onClick}) {
+    const info=gInfo(gi,g);
+    const sc=getSt(info.status||"");
+    return (
+      <button style={tb({width:"100%",background:g?cs.card:"rgba(239,68,68,0.08)",border:`1px solid ${g?cs.border:cs.red}`,borderRadius:7,padding:"10px 12px",marginBottom:6,...fl,justifyContent:"space-between"})}
+        onClick={onClick}>
+        <div style={{...fl,gap:10}}>
+          <span style={{color:cs.muted,fontSize:12,minWidth:20}}>{i+1}.</span>
+          <div>
+            <div style={{fontSize:14,fontWeight:g?500:400,color:g?cs.text:cs.red}}>{g||"— Kosong —"}</div>
+            {g&&(info.status||info.note)&&(
+              <div style={{...fl,gap:5,marginTop:3,flexWrap:"wrap"}}>
+                {info.status&&<span style={{fontSize:9,color:sc.dot,background:sc.bg,padding:"1px 6px",borderRadius:8}}>{sc.lb}</span>}
+                {info.note&&<span style={{fontSize:10,color:cs.muted}}>{info.note}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+        <span style={{fontSize:12,color:cs.muted,flexShrink:0}}>✏️</span>
+      </button>
+    );
+  }
+
+  function Sec({title,guards,shift}) {
+    return (
+      <div style={{marginBottom:18}}>
+        <div style={{...fl,justifyContent:"space-between",marginBottom:8}}>
+          <span style={{fontSize:12,fontWeight:700,color:cs.muted}}>{title}</span>
+          <span style={{fontSize:12,color:cs.acc,fontWeight:600}}>{guards.filter(Boolean).length} guard</span>
+        </div>
+        {guards.map((g,i)=><GRow key={i} g={g} i={i} onClick={()=>onEdit({type:"site",siteId:site.id,shift,idx:i})} />)}
+        {isAdmin&&<button style={tb({width:"100%",background:"transparent",border:`1px dashed ${cs.border}`,borderRadius:7,padding:"8px",color:cs.muted,fontSize:13,marginTop:2,textAlign:"center"})}
+          onClick={()=>onEdit({type:"add",siteId:site.id,shift})}>+ Tambah Guard</button>}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{padding:"10px 14px",...fl,gap:8,background:"#0f1e35",borderBottom:`1px solid ${cs.border}`}}>
+        <button style={tb({flex:1,padding:"8px",borderRadius:7,textAlign:"center",fontSize:13,fontWeight:600,
+          background:view==="list"?cs.acc:"#1e293b",color:view==="list"?"white":cs.muted,border:`1px solid ${view==="list"?cs.acc:cs.border}`})}
+          onClick={()=>setView("list")}>👥 Senarai</button>
+        <button style={tb({flex:1,padding:"8px",borderRadius:7,textAlign:"center",fontSize:13,fontWeight:600,
+          background:view==="schedule"?cs.acc:"#1e293b",color:view==="schedule"?"white":cs.muted,border:`1px solid ${view==="schedule"?cs.acc:cs.border}`})}
+          onClick={()=>setView("schedule")}>📅 Jadual</button>
+      </div>
+
+      {view==="list"&&(
+        <div style={{padding:14}}>
+          <button style={tb({...fl,gap:6,background:cs.card,borderRadius:8,padding:"9px 14px",fontSize:13,marginBottom:14,width:"100%",justifyContent:"center"})}
+            onClick={doShare}>📤 Share jadual ke WhatsApp</button>
+          <Sec title="☀️ DAY SHIFT" guards={site.day} shift="day" />
+          <Sec title="🌙 NIGHT SHIFT" guards={site.night} shift="night" />
+          {site.extra&&site.extra.map(ex=>(
+            <div key={ex.id} style={{marginBottom:18}}>
+              <div style={{fontSize:12,fontWeight:700,color:cs.muted,marginBottom:8}}>{ex.name.toUpperCase()}</div>
+              {ex.g.map((g,i)=><GRow key={i} g={g} i={i} onClick={()=>onEdit({type:"extra",siteId:site.id,extraId:ex.id,idx:i})} />)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {view==="schedule"&&<SiteSchedule site={site} st={st} onSave={onSave} isAdmin={isAdmin} />}
+    </div>
+  );
+}
+
+function RosterView({st,onEdit}) {
+  const [q,setQ]=useState("");
+  const gi=st.guardInfo||{};
+  const map=useMemo(()=>{
+    const m={};
+    st.sites.forEach(s=>{
+      s.day.forEach(g=>{if(g?.trim()){const k=g.trim();m[k]=(m[k]||[]).concat(s.name+" (D)");}});
+      s.night.forEach(g=>{if(g?.trim()){const k=g.trim();m[k]=(m[k]||[]).concat(s.name+" (N)");}});
+      if(s.extra) s.extra.forEach(ex=>ex.g.forEach(g=>{if(g?.trim()){const k=g.trim();m[k]=(m[k]||[]).concat(ex.name);}}));
+    });
+    return m;
+  },[st.sites]);
+  const all=[...new Set([...ROSTER,...Object.keys(map)])].sort();
+  const shown=q?all.filter(g=>g.toLowerCase().includes(q.toLowerCase())):all;
+  const today=new Date();
+
+  return (
+    <div style={{padding:14}}>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="🔍 Cari nama guard..."
+        style={{width:"100%",background:cs.card,border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:14,boxSizing:"border-box",marginBottom:10}}/>
+      <div style={{fontSize:11,color:cs.muted,marginBottom:8}}>{shown.length} guard</div>
+      {shown.map(g=>{
+        const sites=map[g]||[];
+        const info=gInfo(gi,g);
+        const sc=getSt(info.status||"");
+        const expDiff=info.contractEnd?Math.ceil((new Date(info.contractEnd)-today)/86400000):null;
+        const expWarn=expDiff!==null&&expDiff>=0&&expDiff<=30;
+        return (
+          <button key={g} style={tb({width:"100%",background:cs.card,borderRadius:8,padding:"10px 12px",marginBottom:6,...fl,justifyContent:"space-between",gap:8,textAlign:"left"})}
+            onClick={()=>onEdit(g)}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{...fl,gap:5,flexWrap:"wrap"}}>
+                <span style={{fontSize:13,fontWeight:500}}>{g}</span>
+                {info.status&&<span style={{fontSize:9,color:sc.dot,background:sc.bg,padding:"1px 5px",borderRadius:8,flexShrink:0}}>{sc.lb}</span>}
+                {expWarn&&<span style={{fontSize:9,color:cs.red,background:"rgba(239,68,68,0.15)",padding:"1px 5px",borderRadius:8,flexShrink:0}}>{expDiff===0?"Kontrak hari ini!":expDiff+"h tamat"}</span>}
+              </div>
+              <div style={{fontSize:11,color:sites.length?cs.green:cs.red,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {sites.length?sites.slice(0,2).join(" · ")+(sites.length>2?" +("+( sites.length-2)+")":""):"Tidak assign"}
+              </div>
+              {info.note&&<div style={{fontSize:11,color:cs.muted,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{info.note}</div>}
+              {(info.ic||info.phone)&&<div style={{fontSize:10,color:"#475569",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {info.ic&&`🪪 ${info.ic}`}{info.ic&&info.phone&&" · "}{info.phone&&`📞 ${info.phone}`}
+              </div>}
+            </div>
+            <span style={{color:cs.muted,fontSize:12,flexShrink:0}}>✏️</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function HostelView({st,onSave,onEdit,isAdmin}) {
+  const [sel,setSel]=useState(null);
+  if(sel){
+    const h=st.hostels.find(h=>h.id===sel);
+    return (
+      <div style={{padding:14}}>
+        <button style={tb({...fl,gap:6,fontSize:13,color:cs.acc,marginBottom:12})} onClick={()=>setSel(null)}>← Balik</button>
+        <div style={{fontWeight:700,fontSize:16,marginBottom:2}}>{h.name}</div>
+        <div style={{fontSize:12,color:cs.muted,marginBottom:12}}>{h.addr} · {h.guards.filter(Boolean).length} penghuni</div>
+        {h.guards.map((g,i)=>(
+          <button key={i} style={tb({width:"100%",background:g?cs.card:"rgba(239,68,68,0.08)",border:`1px solid ${g?cs.border:cs.red}`,borderRadius:7,padding:"10px 12px",marginBottom:6,...fl,justifyContent:"space-between"})}
+            onClick={()=>onEdit({type:"hostel",hostelId:h.id,idx:i})}>
+            <span style={{fontSize:14,color:g?cs.text:cs.red}}>{i+1}. {g||"— Kosong —"}</span>
+            <span style={{fontSize:12,color:cs.muted}}>✏️</span>
+          </button>
+        ))}
+        {isAdmin&&<button style={tb({width:"100%",background:"transparent",border:`1px dashed ${cs.border}`,borderRadius:7,padding:"8px",color:cs.muted,fontSize:13,marginTop:4,textAlign:"center"})}
+          onClick={()=>onEdit({type:"addHostel",hostelId:h.id})}>+ Tambah Penghuni</button>}
+      </div>
+    );
+  }
+  return (
+    <div style={{padding:14}}>
+      {st.hostels.map(h=>(
+        <button key={h.id} style={tb({width:"100%",background:cs.card,border:`1px solid ${cs.border}`,borderRadius:10,padding:"12px 14px",marginBottom:9,...fl,justifyContent:"space-between",textAlign:"left"})}
+          onClick={()=>setSel(h.id)}>
+          <div>
+            <div style={{fontWeight:700,fontSize:15}}>{h.name}</div>
+            <div style={{fontSize:12,color:cs.muted,marginTop:3}}>{h.addr}</div>
+          </div>
+          <div style={{textAlign:"center",marginLeft:12,flexShrink:0}}>
+            <div style={{fontSize:22,fontWeight:700,color:cs.acc}}>{h.guards.filter(Boolean).length}</div>
+            <div style={{fontSize:10,color:cs.muted}}>penghuni</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EditModal({modal,st,onClose,onSave}) {
+  const getInit=()=>{
+    if(modal.type==="guardInfo") return modal.name;
+    if(modal.type==="site"){const s=st.sites.find(s=>s.id===modal.siteId);return(s&&s[modal.shift]&&s[modal.shift][modal.idx])||"";}
+    if(modal.type==="extra"){const s=st.sites.find(s=>s.id===modal.siteId);const ex=s&&s.extra&&s.extra.find(e=>e.id===modal.extraId);return(ex&&ex.g[modal.idx])||"";}
+    if(modal.type==="hostel"){const h=st.hostels.find(h=>h.id===modal.hostelId);return(h&&h.guards[modal.idx])||"";}
+    return "";
+  };
+  const initName=getInit();
+  const [val,setVal]=useState(initName);
+  const [showSug,setShowSug]=useState(false);
+  const [swapOpen,setSwapOpen]=useState(false);
+  const [swapQ,setSwapQ]=useState("");
+  const [swapTarget,setSwapTarget]=useState(null);
+  const gi=st.guardInfo||{};
+  const info=gInfo(gi,initName);
+  const [status,setStatus]=useState(info.status||"");
+  const [note,setNote]=useState(info.note||"");
+  const [contract,setContract]=useState(info.contractEnd||"");
+  const [ic,setIc]=useState(info.ic||"");
+  const [phone,setPhone]=useState(info.phone||"");
+  const [emergName,setEmergName]=useState(info.emergName||"");
+  const [emergPhone,setEmergPhone]=useState(info.emergPhone||"");
+  const isAdd=modal.type==="add"||modal.type==="addHostel";
+  const isInfo=modal.type==="guardInfo";
+  const sugs=val.length>=1?ROSTER.filter(g=>g.toLowerCase().includes(val.toLowerCase())).slice(0,7):[];
+
+  const swapList=useMemo(()=>{
+    if(!swapQ||swapQ.length<1) return [];
+    const ql=swapQ.toLowerCase();
+    const r=[];
+    st.sites.forEach(s=>{
+      s.day.forEach((g,i)=>{if(g&&g.trim()&&g.trim()!==initName&&g.toLowerCase().includes(ql)) r.push({name:g.trim(),loc:{siteId:s.id,shift:"day",idx:i,label:`${s.name} Day #${i+1}`}});});
+      s.night.forEach((g,i)=>{if(g&&g.trim()&&g.trim()!==initName&&g.toLowerCase().includes(ql)) r.push({name:g.trim(),loc:{siteId:s.id,shift:"night",idx:i,label:`${s.name} Night #${i+1}`}});});
+    });
+    return r.slice(0,6);
+  },[swapQ,st,initName]);
+
+  const mutate=(fn,desc)=>{
+    const ns=JSON.parse(JSON.stringify(st));
+    fn(ns);
+    onSave(desc?addLog(ns,desc):ns);
+  };
+
+  const saveInfoFn=(ns,name)=>{
+    if(!name) return;
+    ns.guardInfo={...ns.guardInfo,[name]:{...(ns.guardInfo[name]||{}),status,note,contractEnd:contract,ic,phone,emergName,emergPhone}};
+  };
+
+  const handleSave=()=>{
+    const v=val.trim();
+    if(isAdd&&!v) return;
+    mutate(ns=>{
+      if(modal.type==="site") {ns.sites.find(s=>s.id===modal.siteId)[modal.shift][modal.idx]=v; saveInfoFn(ns,v);}
+      else if(modal.type==="add") {ns.sites.find(s=>s.id===modal.siteId)[modal.shift].push(v); saveInfoFn(ns,v);}
+      else if(modal.type==="extra") {const s=ns.sites.find(s=>s.id===modal.siteId);s.extra.find(e=>e.id===modal.extraId).g[modal.idx]=v; saveInfoFn(ns,v);}
+      else if(modal.type==="hostel") {ns.hostels.find(h=>h.id===modal.hostelId).guards[modal.idx]=v; saveInfoFn(ns,v);}
+      else if(modal.type==="addHostel") {ns.hostels.find(h=>h.id===modal.hostelId).guards.push(v); saveInfoFn(ns,v);}
+      else if(isInfo) {saveInfoFn(ns,v);}
+    }, v?`Edit: ${initName||"baru"}→${v} [${status||"duty"}]${note?" ("+note+")":""}`:null);
+  };
+
+  const handleClear=()=>mutate(ns=>{
+    if(modal.type==="site") ns.sites.find(s=>s.id===modal.siteId)[modal.shift][modal.idx]="";
+    if(modal.type==="hostel") ns.hostels.find(h=>h.id===modal.hostelId).guards[modal.idx]="";
+  },`Kosong: ${initName} di ${modal.siteId||""}`);
+
+  const handleDel=()=>mutate(ns=>{
+    if(modal.type==="site") ns.sites.find(s=>s.id===modal.siteId)[modal.shift].splice(modal.idx,1);
+    if(modal.type==="hostel") ns.hostels.find(h=>h.id===modal.hostelId).guards.splice(modal.idx,1);
+  },`Hapus baris: ${initName||"(kosong)"}`);
+
+  const handleSwap=()=>{
+    if(!swapTarget) return;
+    const src=findLoc(st,initName);
+    if(!src) return;
+    mutate(ns=>{
+      const setV=(s,loc,v)=>{if(loc.isExtra){s.sites.find(x=>x.id===loc.siteId).extra.find(e=>e.id===loc.extraId).g[loc.idx]=v;}else{s.sites.find(x=>x.id===loc.siteId)[loc.shift][loc.idx]=v;}};
+      setV(ns,src,swapTarget.name);
+      setV(ns,swapTarget.loc,initName);
+    },`Swap: ${initName} ↔ ${swapTarget.name} (${swapTarget.loc.label})`);
+  };
+
+  const showInfo=val.trim()||isInfo;
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"flex-end",zIndex:200}} onClick={onClose}>
+      <div style={{background:"#1a2744",borderRadius:"16px 16px 0 0",padding:"16px 16px 28px",width:"100%",maxWidth:480,margin:"0 auto",boxSizing:"border-box",maxHeight:"92vh",overflowY:"auto"}}
+        onClick={e=>e.stopPropagation()}>
+
+        <div style={{fontWeight:700,fontSize:16,marginBottom:14}}>{isInfo?"Info Guard":isAdd?"Tambah Guard":"Edit Guard"}</div>
+
+        {!isInfo&&(
+          <div style={{position:"relative",marginBottom:12}}>
+            <input value={val} onChange={e=>{setVal(e.target.value);setShowSug(true);}} onFocus={()=>setShowSug(true)}
+              placeholder="Nama guard..." autoFocus
+              style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"12px",color:cs.text,fontSize:15,boxSizing:"border-box"}}/>
+            {showSug&&sugs.length>0&&(
+              <div style={{position:"absolute",bottom:"100%",left:0,right:0,background:"#1e3a5f",borderRadius:8,marginBottom:3,zIndex:10,maxHeight:180,overflow:"auto",boxShadow:"0 -8px 24px rgba(0,0,0,0.5)"}}>
+                {sugs.map(g=>(
+                  <button key={g} style={tb({width:"100%",padding:"10px 12px",fontSize:14,textAlign:"left",borderBottom:`1px solid ${cs.border}`,display:"block"})}
+                    onClick={()=>{setVal(g);setShowSug(false);}}>{g}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {isInfo&&<div style={{background:cs.card,borderRadius:8,padding:"12px",marginBottom:12,fontSize:15,fontWeight:600}}>{initName}</div>}
+
+        {showInfo&&(
+          <>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>STATUS</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {STATUSES.map(s=>(
+                  <button key={s.k} style={tb({padding:"6px 12px",borderRadius:20,fontSize:12,fontWeight:600,
+                    background:status===s.k?s.bg:"#1e293b",color:status===s.k?s.dot:cs.muted,
+                    border:`1px solid ${status===s.k?s.dot:cs.border}`})}
+                    onClick={()=>setStatus(s.k)}>{s.lb}</button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>NOTA</div>
+              <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Training 8-9 Jun / OT / Sakit..."
+                style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box"}}/>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>TARIKH TAMAT KONTRAK</div>
+              <input type="date" value={contract} onChange={e=>setContract(e.target.value)}
+                style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box"}}/>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>IC / PASSPORT NO.</div>
+              <input value={ic} onChange={e=>setIc(e.target.value)} placeholder="000101-01-1234 / A12345678"
+                style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box"}}/>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>NO. TELEFON</div>
+              <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="01X-XXXXXXXX"
+                style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box"}}/>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>KENALAN KECEMASAN</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                <input value={emergName} onChange={e=>setEmergName(e.target.value)} placeholder="Nama..."
+                  style={{background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 10px",color:cs.text,fontSize:12,boxSizing:"border-box"}}/>
+                <input type="tel" value={emergPhone} onChange={e=>setEmergPhone(e.target.value)} placeholder="No. Tel..."
+                  style={{background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 10px",color:cs.text,fontSize:12,boxSizing:"border-box"}}/>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!isAdd&&!isInfo&&initName&&(
+          <div style={{marginBottom:12}}>
+            <button style={tb({...fl,gap:6,fontSize:13,color:cs.acc,marginBottom:swapOpen?8:0})}
+              onClick={()=>{setSwapOpen(v=>!v);setSwapTarget(null);setSwapQ("");}}>
+              🔄 Tukar posisi dengan... {swapOpen?"▲":"▼"}
+            </button>
+            {swapOpen&&(
+              <div>
+                <input value={swapQ} onChange={e=>{setSwapQ(e.target.value);setSwapTarget(null);}} placeholder="Cari guard untuk tukar..."
+                  style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box",marginBottom:6}}/>
+                {swapList.map(({name,loc})=>(
+                  <button key={name} style={tb({width:"100%",background:swapTarget?.name===name?"#1e3a5f":cs.card,border:`1px solid ${swapTarget?.name===name?cs.acc:cs.border}`,borderRadius:7,padding:"10px 12px",marginBottom:5,textAlign:"left"})}
+                    onClick={()=>setSwapTarget({name,loc})}>
+                    <div style={{fontSize:13,fontWeight:500}}>{name}</div>
+                    <div style={{fontSize:11,color:cs.muted}}>{loc.label}</div>
+                  </button>
+                ))}
+                {swapTarget&&(
+                  <div style={{background:"#0f1e35",borderRadius:8,padding:10,marginBottom:4}}>
+                    <div style={{fontSize:12,color:cs.muted,marginBottom:4}}>Pengesahan:</div>
+                    <div style={{fontSize:13,fontWeight:600,color:cs.text}}>{initName} ↔ {swapTarget.name}</div>
+                    <div style={{fontSize:11,color:cs.muted,marginTop:1}}>{swapTarget.loc.label}</div>
+                    <button style={tb({width:"100%",background:"#1d4ed8",borderRadius:7,padding:"10px",fontSize:14,fontWeight:700,color:"white",textAlign:"center",marginTop:8})}
+                      onClick={handleSwap}>✓ Sahkan Swap</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{display:"grid",gridTemplateColumns:isAdd||isInfo?"1fr 1fr":"2fr 1fr 1fr",gap:8,marginTop:4}}>
+          <button style={tb({background:cs.acc,borderRadius:8,padding:"13px",fontSize:15,fontWeight:700,color:"white",textAlign:"center"})} onClick={handleSave}>✓ Simpan</button>
+          {!isAdd&&!isInfo&&(
+            <>
+              <button style={tb({background:"#374151",borderRadius:8,padding:"13px",fontSize:13,color:cs.muted,textAlign:"center"})} onClick={handleClear}>Kosong</button>
+              <button style={tb({background:"#7f1d1d",borderRadius:8,padding:"13px",fontSize:13,color:"#fca5a5",textAlign:"center"})} onClick={handleDel}>Hapus</button>
+            </>
+          )}
+          {(isAdd||isInfo)&&<button style={tb({background:"#374151",borderRadius:8,padding:"13px",fontSize:13,color:cs.muted,textAlign:"center"})} onClick={onClose}>Batal</button>}
+        </div>
+        {!isAdd&&!isInfo&&<div style={{fontSize:11,color:cs.muted,marginTop:8,textAlign:"center"}}>Kosong = vacant · Hapus = buang baris</div>}
+      </div>
+    </div>
+  );
+}
+
+function SearchOverlay({st,onClose,onGo}) {
+  const [q,setQ]=useState("");
+  const results=useMemo(()=>{
+    if(!q||q.length<2) return [];
+    const ql=q.toLowerCase();
+    const found=[];
+    st.sites.forEach(s=>{
+      if(s.name.toLowerCase().includes(ql)) found.push({label:s.name,sub:"🏢 Site",siteId:s.id});
+      [...s.day,...s.night,...(s.extra?s.extra.flatMap(e=>e.g):[])].filter(g=>g&&g.toLowerCase().includes(ql)).forEach(g=>{
+        found.push({label:g,sub:"👮 "+s.name,siteId:s.id});
+      });
+    });
+    st.hostels.forEach(h=>{
+      h.guards.filter(g=>g&&g.toLowerCase().includes(ql)).forEach(g=>{
+        found.push({label:g,sub:"🏠 "+h.name});
+      });
+    });
+    const seen=new Set();
+    return found.filter(f=>{const k=f.label+f.sub;if(seen.has(k)) return false;seen.add(k);return true;}).slice(0,20);
+  },[q,st]);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:cs.bg,zIndex:300,display:"flex",flexDirection:"column"}}>
+      <div style={{background:cs.header,padding:"10px 14px",...fl,gap:10,flexShrink:0}}>
+        <button style={tb({fontSize:22,color:cs.acc,lineHeight:1})} onClick={onClose}>←</button>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Cari guard atau site..." autoFocus
+          style={{flex:1,background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"8px 12px",color:cs.text,fontSize:14}}/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:14}}>
+        {q.length<2&&<div style={{color:cs.muted,fontSize:13,textAlign:"center",marginTop:30}}>Taip sekurang-kurangnya 2 huruf...</div>}
+        {results.map((r,i)=>(
+          <button key={i} style={tb({width:"100%",background:cs.card,borderRadius:8,padding:"11px 14px",marginBottom:6,...fl,justifyContent:"space-between",textAlign:"left"})}
+            onClick={()=>r.siteId?onGo(r.siteId):null}>
+            <div>
+              <div style={{fontSize:14,fontWeight:500}}>{r.label}</div>
+              <div style={{fontSize:11,color:cs.muted,marginTop:1}}>{r.sub}</div>
+            </div>
+            {r.siteId&&<span style={{color:cs.muted,fontSize:18}}>›</span>}
+          </button>
+        ))}
+        {q.length>=2&&results.length===0&&<div style={{color:cs.muted,fontSize:13,textAlign:"center",marginTop:30}}>Tiada keputusan untuk "{q}"</div>}
+      </div>
+    </div>
+  );
+}
+
+const SCHED_TYPES = [
+  {k:"",     lb:"Biasa",     abbr:"",   bg:"transparent",  fg:cs.muted,  border:cs.border},
+  {k:"off",  lb:"Off/Cuti", abbr:"OF", bg:"#dc2626",      fg:"white",   border:"#dc2626"},
+  {k:"ot",   lb:"Overtime", abbr:"OT", bg:"#ca8a04",      fg:"white",   border:"#ca8a04"},
+  {k:"mc",   lb:"MC Sakit", abbr:"MC", bg:"#ea580c",      fg:"white",   border:"#ea580c"},
+  {k:"train",lb:"Training", abbr:"TR", bg:"#2563eb",      fg:"white",   border:"#2563eb"},
+  {k:"ts",   lb:"Tukar Site",abbr:"TS",bg:"#7c3aed",      fg:"white",   border:"#7c3aed"},
+];
+const getSchedType = k => SCHED_TYPES.find(t=>t.k===k)||SCHED_TYPES[0];
+const MONTH_NAMES = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
+const DOW_SHORT   = ["Ahd","Isn","Sel","Rab","Kha","Jum","Sab"];
+
+function SiteSchedule({site,st,onSave,isAdmin}) {
+  const now = new Date();
+  const [ym,setYm] = useState(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  const [cellEdit,setCellEdit] = useState(null);
+
+  const [yr,mo] = ym.split('-').map(Number);
+  const daysInMonth = new Date(yr,mo,0).getDate();
+  const dates = Array.from({length:daysInMonth},(_,i)=>{
+    const d = new Date(yr,mo-1,i+1);
+    return {d:i+1, dow:DOW_SHORT[d.getDay()], str:`${ym}-${String(i+1).padStart(2,'0')}`, isWeekend:d.getDay()===0||d.getDay()===6};
+  });
+
+  const prevM = () => { const d=new Date(yr,mo-2,1); setYm(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); };
+  const nextM = () => { const d=new Date(yr,mo,1);   setYm(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); };
+
+  const sched   = (st.schedule&&st.schedule[site.id])||{};
+  const getCell = (g,ds) => sched[g]&&sched[g][ds] ? sched[g][ds] : null;
+
+  const dayG   = site.day.filter(Boolean);
+  const nightG = site.night.filter(Boolean).filter(g=>!dayG.includes(g));
+  const allG   = [...dayG,...nightG];
+
+  const NW=112, CW=28;
+
+  const handleSave = (guard,dateStr,type,note) => {
+    const ns = JSON.parse(JSON.stringify(st));
+    if(!ns.schedule) ns.schedule={};
+    if(!ns.schedule[site.id]) ns.schedule[site.id]={};
+    if(!ns.schedule[site.id][guard]) ns.schedule[site.id][guard]={};
+    if(!type) { delete ns.schedule[site.id][guard][dateStr]; }
+    else      { ns.schedule[site.id][guard][dateStr]={type,note}; }
+    onSave(addLog(ns,`Jadual: ${guard} — ${dateStr} — ${type||"normal"}`));
+    setCellEdit(null);
+  };
+
+  return (
+    <div style={{padding:14}}>
+      <div style={{...fl,justifyContent:"space-between",marginBottom:10}}>
+        <button style={tb({fontSize:26,color:cs.acc,padding:"2px 12px",lineHeight:1})} onClick={prevM}>‹</button>
+        <span style={{fontWeight:700,fontSize:15}}>{MONTH_NAMES[mo-1]} {yr}</span>
+        <button style={tb({fontSize:26,color:cs.acc,padding:"2px 12px",lineHeight:1})} onClick={nextM}>›</button>
+      </div>
+
+      <div style={{...fl,flexWrap:"wrap",gap:5,marginBottom:10}}>
+        {SCHED_TYPES.filter(t=>t.k).map(t=>(
+          <span key={t.k} style={{fontSize:9,background:t.bg,color:t.fg,padding:"2px 8px",borderRadius:6,border:`1px solid ${t.border}`}}>{t.abbr} — {t.lb}</span>
+        ))}
+      </div>
+
+      <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>Tap sel untuk tandakan status harian</div>
+
+      <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${cs.border}`}}>
+        <div style={{minWidth:NW+dates.length*CW}}>
+
+          <div style={{display:"flex",background:"#0d1b2e",borderBottom:`2px solid ${cs.border}`,position:"sticky",top:0,zIndex:5}}>
+            <div style={{width:NW,minWidth:NW,padding:"5px 6px",fontSize:10,fontWeight:700,color:cs.muted,position:"sticky",left:0,background:"#0d1b2e",zIndex:6,borderRight:`1px solid ${cs.border}`}}>NAMA GUARD</div>
+            {dates.map(d=>(
+              <div key={d.d} style={{width:CW,minWidth:CW,textAlign:"center",padding:"3px 0",borderRight:`1px solid ${cs.border}`}}>
+                <div style={{fontSize:9,fontWeight:700,color:d.isWeekend?"#f87171":cs.text}}>{d.d}</div>
+                <div style={{fontSize:8,color:d.isWeekend?"#f87171":cs.muted}}>{d.dow}</div>
+              </div>
+            ))}
+          </div>
+
+          {dayG.length>0&&(
+            <div style={{background:"#0a1628",padding:"3px 6px",fontSize:9,fontWeight:700,color:"#fbbf24",borderBottom:`1px solid ${cs.border}`,position:"sticky",left:0}}>
+              ☀️ DAY SHIFT
+            </div>
+          )}
+          {dayG.map((guard,gi)=>(
+            <div key={guard} style={{display:"flex",borderBottom:`1px solid ${cs.border}`,background:gi%2===0?"#0f172a":"#111827"}}>
+              <div style={{width:NW,minWidth:NW,padding:"5px 6px",fontSize:10,color:cs.text,position:"sticky",left:0,background:gi%2===0?"#0f172a":"#111827",zIndex:3,borderRight:`1px solid ${cs.border}`,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center"}}>{guard}</div>
+              {dates.map(d=>{
+                const cell=getCell(guard,d.str);
+                const typ=cell?getSchedType(cell.type):null;
+                return (
+                  <div key={d.d} onClick={()=>isAdmin&&setCellEdit({guard,dateStr:d.str,current:cell})}
+                    style={{width:CW,minWidth:CW,height:26,borderRight:`1px solid ${cs.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+                      background:typ&&typ.k?typ.bg:d.isWeekend?"rgba(239,68,68,0.05)":"transparent",fontSize:8,fontWeight:700,color:typ&&typ.k?typ.fg:cs.muted}}>
+                    {typ&&typ.k?typ.abbr:""}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {nightG.length>0&&(
+            <div style={{background:"#0a1628",padding:"3px 6px",fontSize:9,fontWeight:700,color:"#93c5fd",borderBottom:`1px solid ${cs.border}`,position:"sticky",left:0}}>
+              🌙 NIGHT SHIFT
+            </div>
+          )}
+          {nightG.map((guard,gi)=>(
+            <div key={guard} style={{display:"flex",borderBottom:`1px solid ${cs.border}`,background:gi%2===0?"#0f172a":"#111827"}}>
+              <div style={{width:NW,minWidth:NW,padding:"5px 6px",fontSize:10,color:cs.text,position:"sticky",left:0,background:gi%2===0?"#0f172a":"#111827",zIndex:3,borderRight:`1px solid ${cs.border}`,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center"}}>{guard}</div>
+              {dates.map(d=>{
+                const cell=getCell(guard,d.str);
+                const typ=cell?getSchedType(cell.type):null;
+                return (
+                  <div key={d.d} onClick={()=>isAdmin&&setCellEdit({guard,dateStr:d.str,current:cell})}
+                    style={{width:CW,minWidth:CW,height:26,borderRight:`1px solid ${cs.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+                      background:typ&&typ.k?typ.bg:d.isWeekend?"rgba(239,68,68,0.05)":"transparent",fontSize:8,fontWeight:700,color:typ&&typ.k?typ.fg:cs.muted}}>
+                    {typ&&typ.k?typ.abbr:""}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {cellEdit&&<CellEditor guard={cellEdit.guard} dateStr={cellEdit.dateStr} current={cellEdit.current} onSave={handleSave} onClose={()=>setCellEdit(null)} />}
+    </div>
+  );
+}
+
+function CellEditor({guard,dateStr,current,onSave,onClose}) {
+  const [type,setType]=useState(current?.type||"");
+  const [note,setNote]=useState(current?.note||"");
+  const parts=dateStr.split('-');
+  const lbl=`${parts[2]}/${parts[1]}/${parts[0]}`;
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"flex-end",zIndex:400}} onClick={onClose}>
+      <div style={{background:"#1a2744",borderRadius:"16px 16px 0 0",padding:"16px 16px 28px",width:"100%",maxWidth:480,margin:"0 auto",boxSizing:"border-box"}}
+        onClick={e=>e.stopPropagation()}>
+        <div style={{fontWeight:700,fontSize:15,marginBottom:2}}>{guard}</div>
+        <div style={{fontSize:12,color:cs.muted,marginBottom:14}}>{lbl}</div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:12}}>
+          {SCHED_TYPES.map(t=>(
+            <button key={t.k} style={tb({padding:"10px 4px",borderRadius:8,fontSize:12,fontWeight:600,textAlign:"center",
+              background:type===t.k?t.bg:"#1e293b",color:type===t.k?t.fg:cs.muted,
+              border:`2px solid ${type===t.k?t.border:cs.border}`})}
+              onClick={()=>setType(t.k)}>
+              {t.lb||"Biasa"}
+            </button>
+          ))}
+        </div>
+
+        {type&&type!=="off"&&(
+          <input value={note} onChange={e=>setNote(e.target.value)}
+            placeholder={type==="ot"?"Site OT (cth: Impiana)...":type==="ts"?"Site baru...":"Nota..."}
+            style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box",marginBottom:12}}/>
+        )}
+
+        <div style={{...fl,gap:8}}>
+          <button style={tb({flex:2,background:cs.acc,borderRadius:8,padding:"13px",fontSize:14,fontWeight:700,color:"white",textAlign:"center"})}
+            onClick={()=>onSave(guard,dateStr,type,note)}>✓ Simpan</button>
+          <button style={tb({flex:1,background:"#374151",borderRadius:8,padding:"13px",fontSize:13,color:cs.muted,textAlign:"center"})}
+            onClick={onClose}>Batal</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotisView({st,onSave,isAdmin}) {
+  const [addMode,setAddMode]=useState(false);
+  const [viewN,setViewN]=useState(null);
+  const [filter,setFilter]=useState("all");
+  const [nTitle,setNTitle]=useState("");
+  const [nBody,setNBody]=useState("");
+  const [nPri,setNPri]=useState("normal");
+
+  const notices=st.notices||[];
+  const PRIS=[
+    {k:"high",  lb:"⚠️ Penting", color:"#ef4444",bg:"rgba(239,68,68,0.15)"},
+    {k:"normal",lb:"📋 Normal",  color:"#3b82f6",bg:"rgba(59,130,246,0.15)"},
+    {k:"info",  lb:"ℹ️ Maklumat",color:"#22c55e",bg:"rgba(34,197,94,0.15)"},
+  ];
+  const getPri=k=>PRIS.find(p=>p.k===k)||PRIS[1];
+
+  const shown=notices.filter(n=>{
+    if(filter==="new") return !n.readAt;
+    if(filter==="old") return !!n.readAt;
+    return true;
+  });
+
+  const doAdd=()=>{
+    if(!nTitle.trim()) return;
+    const ns=JSON.parse(JSON.stringify(st));
+    if(!ns.notices) ns.notices=[];
+    ns.notices.unshift({id:Date.now().toString(),title:nTitle.trim(),body:nBody.trim(),priority:nPri,createdAt:Date.now(),readAt:null});
+    onSave(addLog(ns,`Notis baru: "${nTitle.trim()}"`));
+    setNTitle("");setNBody("");setNPri("normal");setAddMode(false);
+  };
+
+  const doRead=id=>{
+    const ns=JSON.parse(JSON.stringify(st));
+    const n=ns.notices.find(x=>x.id===id);
+    if(n){n.readAt=Date.now();}
+    onSave(ns);
+  };
+
+  const doDel=id=>{
+    const ns=JSON.parse(JSON.stringify(st));
+    ns.notices=(ns.notices||[]).filter(x=>x.id!==id);
+    onSave(addLog(ns,"Notis dipadam"));
+    if(viewN?.id===id) setViewN(null);
+  };
+
+  if(viewN){
+    const n=viewN; const pri=getPri(n.priority);
+    return (
+      <div style={{padding:14}}>
+        <button style={tb({...fl,gap:6,fontSize:13,color:cs.acc,marginBottom:12})} onClick={()=>setViewN(null)}>← Balik</button>
+        <div style={{...fl,gap:8,marginBottom:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:pri.color,background:pri.bg,padding:"2px 10px",borderRadius:8,fontWeight:600}}>{pri.lb}</span>
+          {!n.readAt&&<span style={{fontSize:11,color:"white",background:cs.acc,padding:"2px 10px",borderRadius:8}}>● Baru</span>}
+        </div>
+        <div style={{fontWeight:700,fontSize:18,marginBottom:6}}>{n.title}</div>
+        <div style={{fontSize:11,color:cs.muted,marginBottom:16}}>{new Date(n.createdAt).toLocaleString("ms-MY")}</div>
+        <div style={{fontSize:14,color:cs.text,lineHeight:1.7,marginBottom:20,whiteSpace:"pre-wrap"}}>{n.body||"(Tiada kandungan tambahan)"}</div>
+        <div style={{...fl,gap:8}}>
+          {!n.readAt&&<button style={tb({flex:1,background:"rgba(34,197,94,0.15)",border:`1px solid ${cs.green}`,borderRadius:8,padding:"11px",fontSize:13,color:cs.green,textAlign:"center"})}
+            onClick={()=>{doRead(n.id);setViewN({...n,readAt:Date.now()});}}>✓ Tandakan Dibaca</button>}
+          <button style={tb({flex:1,background:"rgba(239,68,68,0.15)",border:`1px solid ${cs.red}`,borderRadius:8,padding:"11px",fontSize:13,color:cs.red,textAlign:"center"})}
+            onClick={()=>doDel(n.id)}>🗑️ Padam</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{padding:14}}>
+      <div style={{...fl,justifyContent:"space-between",marginBottom:14}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:16}}>Notis & Pengumuman</div>
+          <div style={{fontSize:11,color:cs.muted,marginTop:2}}>
+            {notices.filter(n=>!n.readAt).length} belum dibaca · {notices.length} jumlah
+          </div>
+        </div>
+        {isAdmin&&<button style={tb({background:cs.acc,borderRadius:8,padding:"8px 14px",fontSize:13,fontWeight:600,color:"white"})}
+          onClick={()=>setAddMode(true)}>+ Tambah</button>}
+      </div>
+
+      <div style={{...fl,gap:6,marginBottom:14}}>
+        {[["all","Semua"],["new","Belum Baca"],["old","Sudah Baca"]].map(([k,lb])=>(
+          <button key={k} style={tb({padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,
+            background:filter===k?cs.acc:"#1e293b",color:filter===k?"white":cs.muted,border:`1px solid ${filter===k?cs.acc:cs.border}`})}
+            onClick={()=>setFilter(k)}>{lb}</button>
+        ))}
+      </div>
+
+      {shown.length===0&&<div style={{textAlign:"center",color:cs.muted,fontSize:13,marginTop:40}}>
+        {filter==="new"?"✓ Tiada notis yang belum dibaca":"Tiada notis"}
+      </div>}
+
+      {shown.map(n=>{
+        const pri=getPri(n.priority);
+        return (
+          <button key={n.id} style={tb({width:"100%",background:cs.card,borderRadius:10,padding:"12px 14px",marginBottom:9,textAlign:"left",display:"block",borderLeft:`4px solid ${pri.color}`})}
+            onClick={()=>{if(!n.readAt) doRead(n.id);setViewN(n);}}>
+            <div style={{...fl,justifyContent:"space-between",marginBottom:5,gap:8}}>
+              <div style={{...fl,gap:6,flex:1,minWidth:0}}>
+                <span style={{fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</span>
+                {!n.readAt&&<span style={{fontSize:9,color:"white",background:cs.acc,padding:"1px 6px",borderRadius:8,flexShrink:0}}>Baru</span>}
+              </div>
+              <span style={{fontSize:10,color:pri.color,background:pri.bg,padding:"1px 7px",borderRadius:6,flexShrink:0}}>{pri.lb}</span>
+            </div>
+            {n.body&&<div style={{fontSize:12,color:cs.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:4}}>{n.body}</div>}
+            <div style={{fontSize:10,color:"#475569"}}>{new Date(n.createdAt).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})}</div>
+          </button>
+        );
+      })}
+
+      {addMode&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"flex-end",zIndex:200}} onClick={()=>setAddMode(false)}>
+          <div style={{background:"#1a2744",borderRadius:"16px 16px 0 0",padding:"16px 16px 28px",width:"100%",maxWidth:480,margin:"0 auto",boxSizing:"border-box",maxHeight:"90vh",overflowY:"auto"}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:14}}>📢 Notis Baru</div>
+
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:5}}>TAJUK *</div>
+              <input value={nTitle} onChange={e=>setNTitle(e.target.value)} placeholder="Tajuk notis..." autoFocus
+                style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:14,boxSizing:"border-box"}}/>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:5}}>KANDUNGAN</div>
+              <textarea value={nBody} onChange={e=>setNBody(e.target.value)} placeholder="Isi maklumat atau arahan..." rows={5}
+                style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"10px 12px",color:cs.text,fontSize:13,boxSizing:"border-box",resize:"none",fontFamily:"system-ui"}}/>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,color:cs.muted,marginBottom:6}}>KEUTAMAAN</div>
+              <div style={{...fl,gap:8}}>
+                {PRIS.map(p=>(
+                  <button key={p.k} style={tb({flex:1,padding:"9px 4px",borderRadius:8,fontSize:12,fontWeight:600,textAlign:"center",
+                    background:nPri===p.k?p.bg:"#1e293b",color:nPri===p.k?p.color:cs.muted,border:`1px solid ${nPri===p.k?p.color:cs.border}`})}
+                    onClick={()=>setNPri(p.k)}>{p.lb}</button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{...fl,gap:8}}>
+              <button style={tb({flex:2,background:cs.acc,borderRadius:8,padding:"13px",fontSize:14,fontWeight:700,color:"white",textAlign:"center"})}
+                onClick={doAdd}>📢 Post Notis</button>
+              <button style={tb({flex:1,background:"#374151",borderRadius:8,padding:"13px",fontSize:13,color:cs.muted,textAlign:"center"})}
+                onClick={()=>setAddMode(false)}>Batal</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LaporanModal({st,onClose}) {
+  const now=new Date();
+  const [ym,setYm]=useState(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  const [selSite,setSelSite]=useState("all");
+  const MONTHS=["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov","Dis"];
+  const [yr,mo]=ym.split('-').map(Number);
+  const daysInMonth=new Date(yr,mo,0).getDate();
+
+  const prevM=()=>{const d=new Date(yr,mo-2,1);setYm(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);};
+  const nextM=()=>{const d=new Date(yr,mo,1);setYm(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);};
+
+  const sites=selSite==="all"?st.sites:st.sites.filter(s=>s.id===selSite);
+
+  const calcGuard=(siteId,guard)=>{
+    const days=(st.schedule&&st.schedule[siteId]&&st.schedule[siteId][guard])||{};
+    const counts={off:0,ot:0,mc:0,train:0,ts:0,normal:0};
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${ym}-${String(d).padStart(2,'0')}`;
+      const cell=days[ds];
+      if(cell&&cell.type) counts[cell.type]=(counts[cell.type]||0)+1;
+      else counts.normal++;
+    }
+    return counts;
+  };
+
+  const doExport=()=>{
+    const lines=[`LAPORAN BULANAN — ${MONTHS[mo-1]} ${yr}`,"NURSAJAYA SECURITY SERVICES","=".repeat(40),""];
+    sites.forEach(s=>{
+      const guards=[...s.day.filter(Boolean),...s.night.filter(Boolean).filter(g=>!s.day.includes(g))];
+      if(!guards.length) return;
+      lines.push(`📍 ${s.name}`);
+      lines.push(`${"Guard".padEnd(25)}| Hadir| Off| OT| MC| TR`);
+      lines.push("-".repeat(50));
+      let totH=0,totO=0,totOT=0,totMC=0,totTR=0;
+      guards.forEach(g=>{
+        const c=calcGuard(s.id,g);
+        const hadir=daysInMonth-c.off-c.mc;
+        totH+=hadir;totO+=c.off;totOT+=c.ot;totMC+=c.mc;totTR+=c.train;
+        lines.push(`${g.substring(0,24).padEnd(25)}| ${String(hadir).padStart(4)}| ${String(c.off).padStart(3)}| ${String(c.ot).padStart(2)}| ${String(c.mc).padStart(2)}| ${String(c.train).padStart(2)}`);
+      });
+      lines.push(`${"JUMLAH".padEnd(25)}| ${String(totH).padStart(4)}| ${String(totO).padStart(3)}| ${String(totOT).padStart(2)}| ${String(totMC).padStart(2)}| ${String(totTR).padStart(2)}`);
+      lines.push("");
+    });
+    lines.push("=".repeat(40));
+    lines.push(`Dijana: ${new Date().toLocaleDateString("ms-MY")}`);
+    const txt=lines.join("\n");
+    if(navigator.share){navigator.share({title:`Laporan ${MONTHS[mo-1]} ${yr}`,text:txt}).catch(()=>{});}
+    else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>alert("Laporan disalin ke clipboard!"));}
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",flexDirection:"column",zIndex:300}}>
+      <div style={{background:cs.header,padding:"10px 14px",...fl,justifyContent:"space-between",flexShrink:0}}>
+        <div style={{...fl,gap:8}}>
+          <button style={tb({fontSize:22,color:cs.acc,lineHeight:1})} onClick={onClose}>←</button>
+          <div style={{fontWeight:700,fontSize:15}}>📊 Laporan Bulanan</div>
+        </div>
+        <button style={tb({background:cs.acc,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:600,color:"white"})}
+          onClick={doExport}>📤 Export</button>
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:14,background:cs.bg}}>
+        <div style={{...fl,justifyContent:"space-between",marginBottom:12}}>
+          <button style={tb({fontSize:24,color:cs.acc,padding:"2px 12px"})} onClick={prevM}>‹</button>
+          <span style={{fontWeight:700,fontSize:15}}>{MONTHS[mo-1]} {yr}</span>
+          <button style={tb({fontSize:24,color:cs.acc,padding:"2px 12px"})} onClick={nextM}>›</button>
+        </div>
+
+        <div style={{overflowX:"auto",marginBottom:12}}>
+          <div style={{...fl,gap:6}}>
+            <button style={tb({padding:"5px 10px",borderRadius:16,fontSize:11,background:selSite==="all"?cs.acc:"#1e293b",color:selSite==="all"?"white":cs.muted,border:`1px solid ${selSite==="all"?cs.acc:cs.border}`,flexShrink:0})}
+              onClick={()=>setSelSite("all")}>Semua</button>
+            {st.sites.map(s=>(
+              <button key={s.id} style={tb({padding:"5px 10px",borderRadius:16,fontSize:11,background:selSite===s.id?cs.acc:"#1e293b",color:selSite===s.id?"white":cs.muted,border:`1px solid ${selSite===s.id?cs.acc:cs.border}`,flexShrink:0})}
+                onClick={()=>setSelSite(s.id)}>{s.name}</button>
+            ))}
+          </div>
+        </div>
+
+        {sites.map(s=>{
+          const guards=[...s.day.filter(Boolean),...s.night.filter(Boolean).filter(g=>!s.day.includes(g))];
+          if(!guards.length) return null;
+          return (
+            <div key={s.id} style={{background:cs.card,borderRadius:10,padding:12,marginBottom:12}}>
+              <div style={{fontWeight:700,fontSize:14,marginBottom:8,color:cs.acc}}>📍 {s.name}</div>
+              <div style={{overflowX:"auto"}}>
+                <div style={{minWidth:320}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 40px 40px 40px 40px 40px",gap:2,marginBottom:4}}>
+                    {["Guard","Hadir","Off","OT","MC","TR"].map(h=>(
+                      <div key={h} style={{fontSize:9,fontWeight:700,color:cs.muted,textAlign:h==="Guard"?"left":"center",padding:"2px 4px"}}>{h}</div>
+                    ))}
+                  </div>
+                  {guards.map(g=>{
+                    const c=calcGuard(s.id,g);
+                    const hadir=daysInMonth-c.off-c.mc;
+                    return (
+                      <div key={g} style={{display:"grid",gridTemplateColumns:"1fr 40px 40px 40px 40px 40px",gap:2,marginBottom:3,background:"#0f172a",borderRadius:5,padding:"4px 4px"}}>
+                        <div style={{fontSize:11,color:cs.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",padding:"1px 2px"}}>{g}</div>
+                        <div style={{fontSize:11,fontWeight:600,color:cs.green,textAlign:"center"}}>{hadir}</div>
+                        <div style={{fontSize:11,fontWeight:c.off>0?600:400,color:c.off>0?cs.red:cs.muted,textAlign:"center"}}>{c.off||"-"}</div>
+                        <div style={{fontSize:11,fontWeight:c.ot>0?600:400,color:c.ot>0?"#fbbf24":cs.muted,textAlign:"center"}}>{c.ot||"-"}</div>
+                        <div style={{fontSize:11,fontWeight:c.mc>0?600:400,color:c.mc>0?"#fb923c":cs.muted,textAlign:"center"}}>{c.mc||"-"}</div>
+                        <div style={{fontSize:11,fontWeight:c.train>0?600:400,color:c.train>0?"#60a5fa":cs.muted,textAlign:"center"}}>{c.train||"-"}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
+
+
+function LoginModal({mode,onLogin,onClose}) {
+  const [pin,setPin]=useState("");
+  const [confirm,setConfirm]=useState("");
+  const [err,setErr]=useState("");
+  const isSetup=mode==="setup";
+  const isChange=mode==="change";
+
+  const titles={login:"🔐 Log Masuk Admin",setup:"🔑 Tetapkan PIN Admin",change:"🔑 Tukar PIN Admin"};
+
+  const handleSubmit=()=>{
+    if(pin.length<4){setErr("PIN sekurang-kurangnya 4 digit");return;}
+    if(isSetup||isChange){
+      if(pin!==confirm){setErr("PIN tidak sepadan");return;}
+      if(isChange){
+        const cur=localStorage.getItem("gss_pin");
+        // For change, we need old pin verification - skip for simplicity, admin already logged in
+      }
+      localStorage.setItem("gss_pin",pin);
+      if(isChange){alert("PIN berjaya ditukar!");onClose();return;}
+      onLogin();return;
+    }
+    // Login
+    const stored=localStorage.getItem("gss_pin");
+    if(pin===stored){onLogin();}
+    else{setErr("PIN tidak betul. Cuba lagi.");setPin("");}
+  };
+
+  const handleKey=e=>{if(e.key==="Enter") handleSubmit();};
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:20}}>
+      <div style={{background:"#1a2744",borderRadius:16,padding:24,width:"100%",maxWidth:340,boxSizing:"border-box"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:40,marginBottom:8}}>🔐</div>
+          <div style={{fontWeight:700,fontSize:17,color:cs.text}}>{titles[mode]}</div>
+          {isSetup&&<div style={{fontSize:12,color:cs.muted,marginTop:4}}>Tetapkan PIN untuk melindungi sistem</div>}
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,color:cs.muted,marginBottom:5}}>{isSetup||isChange?"PIN BARU":"PIN ADMIN"}</div>
+          <input type="password" value={pin} onChange={e=>{setPin(e.target.value);setErr("");}} onKeyDown={handleKey}
+            placeholder="Masukkan PIN..." autoFocus maxLength={20}
+            style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"12px",color:cs.text,fontSize:18,letterSpacing:4,textAlign:"center",boxSizing:"border-box"}}/>
+        </div>
+
+        {(isSetup||isChange)&&(
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:cs.muted,marginBottom:5}}>SAHKAN PIN</div>
+            <input type="password" value={confirm} onChange={e=>{setConfirm(e.target.value);setErr("");}} onKeyDown={handleKey}
+              placeholder="Ulang PIN..." maxLength={20}
+              style={{width:"100%",background:"#0f172a",border:`1px solid ${cs.border}`,borderRadius:8,padding:"12px",color:cs.text,fontSize:18,letterSpacing:4,textAlign:"center",boxSizing:"border-box"}}/>
+          </div>
+        )}
+
+        {err&&<div style={{color:cs.red,fontSize:12,textAlign:"center",marginBottom:10}}>⚠️ {err}</div>}
+
+        <div style={{display:"flex",gap:8}}>
+          <button style={tb({flex:2,background:cs.acc,borderRadius:8,padding:"13px",fontSize:15,fontWeight:700,color:"white",textAlign:"center"})}
+            onClick={handleSubmit}>{isSetup?"Tetapkan PIN":isChange?"Tukar PIN":"Masuk"}</button>
+          <button style={tb({flex:1,background:"#374151",borderRadius:8,padding:"13px",fontSize:13,color:cs.muted,textAlign:"center"})}
+            onClick={onClose}>Batal</button>
+        </div>
+
+        {!isSetup&&!isChange&&<div style={{textAlign:"center",marginTop:10,fontSize:11,color:cs.muted}}>
+          Hubungi admin jika terlupa PIN
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+
+
+  </script>
+</body>
+</html>
